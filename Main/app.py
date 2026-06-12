@@ -232,31 +232,31 @@ st.set_page_config(
 )
 
 st.title("📰 Fake News Detector")
-st.write("Nhập nội dung bài báo bên dưới để kiểm tra tin là Fake, Real hoặc cần kiểm chứng thêm.")
+st.write("Enter the content of the article below to check if the news is fake, real, or needs further verification.")
 
 if svm_pipeline_model is None:
     st.error(
-        "Không tìm thấy file mô hình. "
-        "Bạn hãy chạy notebook và lưu model vào: svm_pipeline_model_1.jb"
+        "The model file was not found."
+        "Run the notebook and save the model to: svm_pipeline_model_1.jb"
     )
     st.stop()
 
 new_input = st.text_area(
     "News Article:",
     height=220,
-    placeholder="Nhập nội dung tin tức tại đây..."
+    placeholder="Enter your news content here..."
 )
 
 if st.button("Check news"):
     if not new_input.strip():
-        st.warning("Vui lòng nhập nội dung tin tức trước khi kiểm tra.")
+        st.warning("Please enter your news content before checking.")
         st.stop()
 
     # Tiền xử lý giống dữ liệu train
     cleaned_input = preprocess_text(new_input)
 
     if not cleaned_input.strip():
-        st.warning("Sau khi tiền xử lý, văn bản không còn từ hợp lệ để phân tích.")
+        st.warning("After preprocessing, the text no longer contains valid words for analysis.")
         st.stop()
 
     # Tính fake_probability
@@ -266,7 +266,7 @@ if st.button("Check news"):
     )
 
     if fake_probability is None:
-        st.error("Không thể tính Fake News Risk Score cho model hiện tại.")
+        st.error("It is not possible to calculate the Fake News Risk Score for the current model.")
         st.stop()
 
     # Tầng quyết định 3 nhãn
@@ -294,13 +294,13 @@ if st.button("Check news"):
     # =========================
 
     if final_label == "Fake News":
-        st.error("Dự đoán: Fake News")
+        st.error("Predict: Fake News")
     elif final_label == "Real News":
-        st.success("Dự đoán: Real News")
+        st.success("Predict: Real News")
     else:
-        st.warning("Dự đoán: Need Fact-checking")
+        st.warning("Predict: Need Fact-checking")
 
-    st.metric("Độ tin cậy", f"{fake_probability * 100:.1f}%")
+    st.metric("Reliability", f"{fake_probability * 100:.1f}%")
 
 
     # =========================
@@ -308,47 +308,47 @@ if st.button("Check news"):
     # =========================
 
     if final_label == "Fake News":
-        st.subheader("Các từ/cụm từ làm mô hình nghi ngờ tin giả:")
+        st.subheader("Words/phrases that make us suspicious of fake news:")
 
         if fake_words:
             for word, score in fake_words:
                 st.write(f"- {word}")
         else:
-            st.info("Không tìm thấy từ/cụm từ nổi bật nghiêng về Fake.")
+            st.info("No prominent words/phrases leaning towards Fake were found.")
 
     elif final_label == "Real News":
-        st.subheader("Các từ/cụm từ làm mô hình nghiêng về tin thật:")
+        st.subheader("Words/phrases that make the model lean towards factual information:")
 
         if real_words:
             for word, score in real_words:
                 st.write(f"- {word}")
         else:
-            st.info("Không tìm thấy từ/cụm từ nổi bật nghiêng về Real.")
+            st.info("No prominent words/phrases leaning towards Real were found.")
 
     else:
 
         st.write(
-            "Mức nghi ngờ tin giả nằm trong khoảng chưa chắc chắn "
-            "(từ 30% đến 70%) nên không kết luận là Fake hoặc Real"
+            "The level of suspicion regarding fake news is in the uncertain range."
+            "(From 30% to 70%) so it cannot be concluded whether it is fake or real."
         )
 
         col1, col2 = st.columns(2)
 
         with col1:
-            st.markdown("**Từ/cụm từ nghiêng về Fake:**")
+            st.markdown("**Words/phrases that lean towards fake:**")
             if fake_words:
                 for word, score in fake_words[:5]:
                     st.write(f"- {word}")
             else:
-                st.write("Không có từ nổi bật.")
+                st.write("No words stand out.")
 
         with col2:
-            st.markdown("**Từ/cụm từ nghiêng về Real:**")
+            st.markdown("**Words/phrases leaning towards Real:**")
             if real_words:
                 for word, score in real_words[:5]:
                     st.write(f"- {word}")
             else:
-                st.write("Không có từ nổi bật.")
+                st.write("No words stand out.")
 
-    with st.expander("Xem văn bản sau khi tiền xử lý"):
+    with st.expander("View the text after preprocessing."):
         st.write(cleaned_input)
