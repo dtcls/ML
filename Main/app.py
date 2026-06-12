@@ -12,7 +12,7 @@ from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 # =========================
 
 MODEL_CANDIDATES = [
-    Path("Main/svm_pipeline_model_1.jb")
+    Path("svm_pipeline_model_1.jb")
 ]
 
 
