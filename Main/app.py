@@ -7,18 +7,12 @@ import streamlit as st
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
 
-# =========================
-# 1. Cấu hình đường dẫn model
-# =========================
 
 MODEL_CANDIDATES = [
     Path("svm_pipeline_model_1.jb")
 ]
 
 
-# =========================
-# 2. Tiền xử lý văn bản
-# =========================
 
 STOP_WORDS = set(ENGLISH_STOP_WORDS)
 
@@ -46,9 +40,6 @@ def preprocess_text(text):
     return " ".join(tokens)
 
 
-# =========================
-# 3. Load model
-# =========================
 
 @st.cache_resource
 def load_model():
@@ -62,9 +53,6 @@ def load_model():
 svm_pipeline_model, loaded_path = load_model()
 
 
-# =========================
-# 4. Hàm lấy vectorizer và classifier cuối pipeline
-# =========================
 
 def get_vectorizer_and_classifier(pipeline_model):
     if not hasattr(pipeline_model, "named_steps"):
@@ -82,18 +70,12 @@ def get_vectorizer_and_classifier(pipeline_model):
     return tfidf, classifier
 
 
-# =========================
-# 5. Hàm sigmoid
-# =========================
 
 def sigmoid(x):
     x = np.clip(x, -50, 50)
     return 1 / (1 + np.exp(-x))
 
 
-# =========================
-# 6. Tính fake_probability
-# =========================
 
 def get_fake_probability(pipeline_model, text):
     """
@@ -114,7 +96,6 @@ def get_fake_probability(pipeline_model, text):
 
     fake_label = 0
 
-    # Trường hợp model có predict_proba, ví dụ LogisticRegression
     if hasattr(pipeline_model, "predict_proba"):
         probabilities = pipeline_model.predict_proba([text])[0]
         classes = list(pipeline_model.classes_)
@@ -124,7 +105,6 @@ def get_fake_probability(pipeline_model, text):
             fake_probability = probabilities[fake_index]
             return float(fake_probability), "predict_proba"
 
-    # Trường hợp LinearSVC
     if hasattr(pipeline_model, "decision_function"):
         decision_score = pipeline_model.decision_function([text])
         decision_score = float(np.ravel(decision_score)[0])
@@ -132,9 +112,6 @@ def get_fake_probability(pipeline_model, text):
         _, classifier = get_vectorizer_and_classifier(pipeline_model)
         classes = list(classifier.classes_)
 
-        # Với sklearn LinearSVC nhị phân:
-        # decision_score > 0 nghiêng về classes[1]
-        # decision_score < 0 nghiêng về classes[0]
         prob_class_1 = sigmoid(decision_score)
 
         if fake_label == classes[1]:
@@ -147,9 +124,6 @@ def get_fake_probability(pipeline_model, text):
     return None, None
 
 
-# =========================
-# 7. Tầng quyết định Fake / Real / Need Fact-checking
-# =========================
 
 def make_final_decision(fake_probability):
     """
@@ -168,9 +142,6 @@ def make_final_decision(fake_probability):
         return "Need Fact-checking"
 
 
-# =========================
-# 8. Lấy các từ/cụm từ ảnh hưởng
-# =========================
 
 def get_important_words(pipeline_model, text, target_label, top_n=8):
     tfidf, classifier = get_vectorizer_and_classifier(pipeline_model)
@@ -181,26 +152,18 @@ def get_important_words(pipeline_model, text, target_label, top_n=8):
     if not hasattr(classifier, "coef_"):
         return []
 
-    # Vector hóa văn bản nhập vào
     X = tfidf.transform([text])
 
-    # Lấy danh sách từ/cụm từ trong TF-IDF
     feature_names = tfidf.get_feature_names_out()
 
-    # Với mô hình nhị phân, coef_[0]:
-    # contribution dương -> nghiêng về classes[1], thường là Real = 1
-    # contribution âm   -> nghiêng về classes[0], thường là Fake = 0
     coef = classifier.coef_[0]
 
-    # Contribution = TF-IDF value * trọng số coef
     contributions = X.multiply(coef).toarray().ravel()
 
-    # Chỉ xét những từ/cụm từ thật sự xuất hiện trong văn bản nhập vào
     nonzero_indices = X.nonzero()[1]
 
     classes = list(classifier.classes_)
 
-    # Nếu cần tìm từ nghiêng về Real
     if target_label == classes[1]:
         candidates = [
             (feature_names[i], contributions[i])
@@ -208,7 +171,6 @@ def get_important_words(pipeline_model, text, target_label, top_n=8):
             if contributions[i] > 0
         ]
 
-    # Nếu cần tìm từ nghiêng về Fake
     else:
         candidates = [
             (feature_names[i], abs(contributions[i]))
@@ -221,9 +183,6 @@ def get_important_words(pipeline_model, text, target_label, top_n=8):
     return candidates[:top_n]
 
 
-# =========================
-# 9. Giao diện Streamlit
-# =========================
 
 st.set_page_config(
     page_title="Fake News Detector",
@@ -252,14 +211,12 @@ if st.button("Check news"):
         st.warning("Please enter your news content before checking.")
         st.stop()
 
-    # Tiền xử lý giống dữ liệu train
     cleaned_input = preprocess_text(new_input)
 
     if not cleaned_input.strip():
         st.warning("After preprocessing, the text no longer contains valid words for analysis.")
         st.stop()
 
-    # Tính fake_probability
     fake_probability, probability_method = get_fake_probability(
         svm_pipeline_model,
         cleaned_input
@@ -269,10 +226,8 @@ if st.button("Check news"):
         st.error("It is not possible to calculate the Fake News Risk Score for the current model.")
         st.stop()
 
-    # Tầng quyết định 3 nhãn
     final_label = make_final_decision(fake_probability)
 
-    # Lấy từ khóa nghiêng về Fake và Real
     fake_words = get_important_words(
         svm_pipeline_model,
         cleaned_input,
@@ -289,10 +244,6 @@ if st.button("Check news"):
 
     st.divider()
 
-    # =========================
-    # Hiển thị kết quả chính
-    # =========================
-
     if final_label == "Fake News":
         st.error("Predict: Fake News")
     elif final_label == "Real News":
@@ -302,10 +253,6 @@ if st.button("Check news"):
 
     st.metric("Reliability", f"{fake_probability * 100:.1f}%")
 
-
-    # =========================
-    # Hiển thị từ/cụm từ giải thích
-    # =========================
 
     if final_label == "Fake News":
         st.subheader("Words/phrases that make us suspicious of fake news:")
