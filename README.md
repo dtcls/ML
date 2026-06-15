@@ -87,7 +87,7 @@ Notebook sẽ tự động lưu model tốt nhất ra file `svm_pipeline_model_1
 streamlit run app.py
 ```
 
-Truy cập `http://localhost:8501`, dán nội dung bài báo vào ô nhập và nhấn **Check news**.
+Truy cập `http://localhost:8501`, hoặc dùng trực tiếp link `https://facenewsdetection.streamlit.app/`, dán nội dung bài báo vào ô nhập và nhấn **Check news**.
 
 > **Lưu ý:** File `svm_pipeline_model_1.jb` phải nằm cùng thư mục với `app.py`.
 
